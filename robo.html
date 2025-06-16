@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>HomeBot Virtual Organizer</title>
+  <style>
+    canvas { border: 1px solid black; background: #f4f4f4; }
+  </style>
+</head>
+<body>
+  <h3>🏠 HomeBot Virtual Organizer</h3>
+  <canvas id="sim" width="600" height="400"></canvas>
+
+  <script>
+    const canvas = document.getElementById('sim');
+    const ctx = canvas.getContext('2d');
+
+    const robot = { x: 50, y: 50, size: 20, carrying: null };
+    const items = [
+      { x: 300, y: 80, color: 'red', name: 'Book' },
+      { x: 400, y: 200, color: 'blue', name: 'Toy' },
+    ];
+    const dropZones = [
+      { x: 100, y: 300, color: 'red', name: 'Bookshelf' },
+      { x: 500, y: 300, color: 'blue', name: 'Toybox' },
+    ];
+
+    function draw() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Draw drop zones
+      for (let zone of dropZones) {
+        ctx.fillStyle = zone.color;
+        ctx.fillRect(zone.x, zone.y, 40, 40);
+        ctx.fillStyle = 'black';
+        ctx.fillText(zone.name, zone.x - 10, zone.y + 55);
+      }
+
+      // Draw items
+      for (let item of items) {
+        if (!item.picked) {
+          ctx.fillStyle = item.color;
+          ctx.beginPath();
+          ctx.arc(item.x, item.y, 10, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+
+      // Draw robot
+      ctx.fillStyle = 'gray';
+      ctx.fillRect(robot.x - 10, robot.y - 10, robot.size, robot.size);
+      if (robot.carrying) {
+        ctx.fillStyle = robot.carrying.color;
+        ctx.beginPath();
+        ctx.arc(robot.x, robot.y - 15, 5, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+
+    let target = null;
+
+    function update() {
+      if (!robot.carrying) {
+        // Look for item to pick
+        target = items.find(i => !i.picked);
+        if (target) {
+          moveTo(target.x, target.y, () => {
+            target.picked = true;
+            robot.carrying = target;
+          });
+        }
+      } else {
+        // Look for drop zone
+        const drop = dropZones.find(z => z.color === robot.carrying.color);
+        if (drop) {
+          moveTo(drop.x + 20, drop.y + 20, () => {
+            robot.carrying = null;
+            target = null;
+          });
+        }
+      }
+
+      draw();
+    }
+
+    function moveTo(tx, ty, onArrive) {
+      const dx = tx - robot.x;
+      const dy = ty - robot.y;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      const speed = 2;
+
+      if (dist < speed) {
+        robot.x = tx;
+        robot.y = ty;
+        if (onArrive) onArrive();
+      } else {
+        robot.x += (dx / dist) * speed;
+        robot.y += (dy / dist) * speed;
+      }
+    }
+
+    function loop() {
+      update();
+      requestAnimationFrame(loop);
+    }
+
+    draw();
+    loop();
+  </script>
+</body>
+</html>
